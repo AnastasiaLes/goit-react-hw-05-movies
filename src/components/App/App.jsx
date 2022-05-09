@@ -1,61 +1,57 @@
-import { useState, useEffect } from 'react';
-import { NameField } from '../Form/Form';
-import { ContactList } from '../ContactList/ContactList';
-import { FilterField } from '../Filter/filter';
+import React from 'react';
+import { FeedbackContainer, NotificationMessage } from './App.styled';
+import { Controls } from '../Buttons/Buttons';
+import { FeedbackStatictics } from '../Statistics/Statistics';
 
-const LS_KEY = 'added_contacts';
-const contactList = [
-  { id: 'id-1', name: 'Rosie Simpson', number: '459-12-56' },
-  { id: 'id-2', name: 'Hermione Kline', number: '443-89-12' },
-  { id: 'id-3', name: 'Eden Clements', number: '645-17-79' },
-  { id: 'id-4', name: 'Annie Copeland', number: '227-91-26' },
-];
+const message = 'There is no feedback';
 
-export function PhoneBook() {
-  const [contacts, setContacts] = useState(() => {
-    return JSON.parse(window.localStorage.getItem(LS_KEY)) ?? contactList;
-  });
-  const [filter, setFilter] = useState('');
-
-  useEffect(() => {
-    const contactsObj = JSON.parse(localStorage.getItem(LS_KEY));
-    if (contactsObj !== null) {
-      setContacts(contactsObj);
-    }
-  }, []);
-
-  useEffect(() => {
-    window.localStorage.setItem(LS_KEY, JSON.stringify(contacts));
-  }, [contacts]);
-
-  const formSubmitHandler = data => {
-    contacts.find(contact => contact.name === data.name)
-      ? alert(`${data.name} is already in contacts`)
-      : setContacts(prevState => [...prevState, data]);
+export class App extends React.Component {
+  state = {
+    good: 0,
+    neutral: 0,
+    bad: 0,
   };
 
-  const deleteContact = contactId => {
-    setContacts(prevState =>
-      prevState.filter(contact => contact.id !== contactId)
+  onLeaveFeedback = option => {
+    this.setState(prevState => {
+      return {
+        [option]: prevState[option] + 1,
+      };
+    });
+  };
+
+  countTotalFeedback() {
+    const total = this.state.good + this.state.neutral + this.state.bad;
+    return total;
+  }
+
+  countPositiveFeedbackPercentage() {
+    return Math.round(
+      (this.state.good /
+        (this.state.good + this.state.neutral + this.state.bad)) *
+        100
     );
-  };
+  }
 
-  const getVisibleContacts = () => {
-    const normalizedFilter = filter.toLocaleLowerCase();
-    return contacts.filter(contact =>
-      contact.name.toLocaleLowerCase().includes(normalizedFilter)
+  render() {
+    const options = Object.keys(this.state);
+
+    return (
+      <FeedbackContainer>
+        <h2>Please leave Feedback</h2>
+        <Controls options={options} onLeaveFeedback={this.onLeaveFeedback} />
+        {this.countTotalFeedback() > 0 ? (
+          <FeedbackStatictics
+            good={this.state.good}
+            neutral={this.state.neutral}
+            bad={this.state.bad}
+            total={this.countTotalFeedback()}
+            percentage={this.countPositiveFeedbackPercentage()}
+          />
+        ) : (
+          <NotificationMessage>{message}</NotificationMessage>
+        )}
+      </FeedbackContainer>
     );
-  };
-
-  return (
-    <div>
-      <h1>Hello World</h1>
-      <NameField onSubmit={formSubmitHandler} />
-      <FilterField onChange={event => setFilter(event.currentTarget.value)} />
-      <ContactList
-        contacts={getVisibleContacts()}
-        onDeleteContact={deleteContact}
-      />
-    </div>
-  );
+  }
 }
